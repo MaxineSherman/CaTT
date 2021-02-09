@@ -128,13 +128,12 @@ thetas = intero_wrap2heart( onsets, IBIs );
 
 for i = 1:stats.opt.nloops
     
-    % Now, wrap behaviour to shuffled IBIs
-    V{i}     = intero_wrap2heart( onsets, Shuffle(IBIs) );
+    % shuffle
+    V = intero_wrap2heart(onsets, Shuffle(IBIs));
     
     % run test
-    [~,stats.null(i,1)] = stats.opt.r_fcn(V{i});
+    [~,stats.null(i,1)] = stats.opt.r_fcn(V);
     
- 
 end
 
 % get the pvalue

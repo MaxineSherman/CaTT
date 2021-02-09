@@ -32,6 +32,11 @@
 %                    Select whether histograms display the number of items
 %                    in each bin (count) or the probability of an angle
 %                    being in that bin (probability).
+%
+%    'zero':         'T' or 'R' [default is R]. Specifies whether 0/2pi is
+%                     systole (when you lock to the r-peak) or diastole
+%                     (for when you lock to the t-wave)
+%                     
 %                 
 %   Example:
 %
@@ -81,6 +86,7 @@ plot_subjs = false;
 plot_hist  = true;
 plot_mean  = false;
 plot_norm  = 'count';
+zero_point = 'systole';
 
 % interpret varargin
 if nargin > 2
@@ -99,6 +105,9 @@ if nargin > 2
             assert(ismember(varargin{i+1},{'probability','count'}),'Error in <strong>intero_plot_circ</strong>: quantity should be probability or counts.');
             plot_norm = varargin{i+1};
             
+        elseif strcmpi(varargin{i},'zero')
+            zero_point = varargin{i+1};
+            
         else warning(['Warning in <strong>intero_plot_circ</strong>: Unknown input ' varargin{i} '. Skipping...']);
 
         end
@@ -115,11 +124,20 @@ for i = 1:ngroups
 end
 
 % create axis labels
-ticks  = {'Systole (T)','','',...
-          'T-R midpoint','','',...
-          'Diastole (R)','','',...
-          'R-T midpoint','',''};
-      
+switch zero_point
+    case 'diastole'
+        ticks  = {'Diastole (T)','','',...
+            'T-R midpoint','','',...
+            'Systole (R)','','',...
+            'R-T midpoint','',''};
+        
+    case 'systole'
+        ticks  = {'Systole (R)','','',...
+            'R-T midpoint','','',...
+            'Diastole (T)','','',...
+            'T-R midpoint','',''};
+        
+end
 % ========================================================================
 %  Plot histogram
 % =========================================================================
@@ -145,7 +163,14 @@ if plot_mean
         
         theta           = circ_mean(reshape(data{i},numel(data{i}),1));
         r               = circ_r(reshape(data{i},numel(data{i}),1));
-        polarplot(theta*ones(100,1),linspace(0,r),'Color',cols{i},'LineWidth',intero_opts.plot.lw*1.5)       
+        
+         polarplot([theta,theta],[0,r],'Color',cols{i},'LineWidth',intero_opts.plot.lw*1.5)       
+%         switch theta > 0
+%             case 1
+%                 polarplot(theta*ones(100,1),linspace(0,r),'Color',cols{i},'LineWidth',intero_opts.plot.lw*1.5)       
+%             case 0
+%                 polarplot(theta*ones(100,1),linspace(r,0),'Color',cols{i},'LineWidth',intero_opts.plot.lw*1.5)  
+%         end
         hold on
     end
 end
