@@ -55,7 +55,7 @@ if strcmpi(intero_opts.wrap2,'twav')
     onsets_wrapped( idx,1 ) = ( onsets(idx) - intero_opts.r2t )./(IBIs(idx) - intero_opts.r2t);
     
     % Finally, convert to radians
-    onsets_wrapped        = onsets_wrapped*2*pi;
+    onsets_wrapped        = onsets_wrapped*pi;
 
 %% ========================================================================
 %  Method 2: A simple circular approach.
