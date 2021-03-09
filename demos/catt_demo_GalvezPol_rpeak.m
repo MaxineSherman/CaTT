@@ -36,7 +36,7 @@ catt_opts.qt_method  = 'fixed'; % we don't have the HR data so can't do BPM corr
 % Start by finding the data
 %  ========================================================================
 
-for i_analysis = 2:3
+for i_analysis = 3
     switch i_analysis
         case 1
             dirName = 'Blinks Data';
