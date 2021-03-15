@@ -37,7 +37,7 @@
 %  23/04/2020
 % ========================================================================
 
-function [Z , P] = catt_z2p( X )
+function [P, Z] = catt_z2p( X )
 
 %% Are we working on a single or set of z-scores?
 if ~isstruct(X) & ismatrix(X)

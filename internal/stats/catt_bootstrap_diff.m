@@ -15,7 +15,7 @@
 %      data_type    - Whether your data are linear (non-circular) or
 %                     circular (e.g. angles), use 'linear' or 'circular'.
 %                     Circular data should be expressed in radians.
-%                     Default it 'linear'.
+%                     Default is 'circular'.
 %      direction    - For a two-tailed test write 'twotailed'
 %                     For a one-tailed test on group1>group2, write 'higher'
 %                     For a one-tailed test on group1<group2, write 'lower'
@@ -33,21 +33,20 @@
 %
 %      Examples:
 %
-%        1. For a default test of difference on means for a between-subjects
+%        1. For a default test of difference on circular means for a between-subjects
 %        design (e.g. patients vs controls), call:
 %        [pval, stats] = catt_bootstrap_diff( patients, controls, 'between')
 %
 %        2. If you predict patients > controls and want a one-tailed test, call:
 %        [pval, stats] = catt_bootstrap_diff( patients, controls, 'between', 'higher')
 %
-%        3. For a within-subjects circular test of difference based on medians,
-%           e.g. testing for differences in median cardiac time (expressed 
-%           in radians) for incorrect vs correct responses, call:
+%        3. For a within-subjects linear test of difference based on medians,
+%           e.g. testing for differences in median RT for incorrect vs correct responses, call:
 %          [pval, stats] = catt_bootstrap_diff( correct,...
 %                                               incorrect, ...
 %                                               'within', ...
 %                                               'median', ...
-%                                               'circular');
+%                                               'linear');
 % ========================================================================
 %  CaTT TOOLBOX v1.1
 %  Sackler Centre for Consciousness Science, BSMS
@@ -66,7 +65,7 @@ rng(11);
 
 stats.opt.method    = 'mean';
 stats.opt.nloops    = 10000;
-stats.opt.data_type = 'linear';
+stats.opt.data_type = 'circular';
 stats.opt.direction = 'twotailed';
 
 %% ========================================================================
@@ -227,7 +226,8 @@ switch stats.opt.direction
         pval = sum( stats.null <= stats.difference )./stats.opt.nloops;
 end
 
-
+%% get z-score
+stats.Z = (stats.difference-mean(stats.null))/std(stats.null);
 end
 
 

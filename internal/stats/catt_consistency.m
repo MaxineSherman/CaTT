@@ -24,6 +24,8 @@
 %                                          Negative/positive values mean that
 %                                          there is a disproportionately low/high
 %                                          number of onsets occuring in the bin.
+%                 output.diff_perc         as above, but expressed as a
+%                                          percentage
 %
 % ========================================================================
 %  CaTT TOOLBOX v1.1
@@ -56,7 +58,6 @@ switch catt_opts.wrap2
             
             % get thetas & wrap
             thetas            = catt_wrap2heart( catt_group(i).catt.onsets, catt_group(i).catt.IBI, catt_group(i).catt.qt );
-            thetas            = wrapTo2Pi(thetas);
             
             % bin data
             binned   = catt_bin_data( thetas, bins(2:end) );
@@ -84,42 +85,19 @@ switch catt_opts.wrap2
             
             % get thetas & wrap
             thetas            = catt_wrap2heart( catt_group(i).catt.onsets, catt_group(i).catt.IBI, catt_group(i).catt.qt );
-            thetas            = wrapToPi(thetas);
             
             % bin data
             [binned_data,bin_centres,LL,UL] = catt_bin_circ_data(thetas,nbins);
             
             % convert to proportions, separately for pre and post t 
             for j = 1:(nbins/2)
-                props(i,j) = sum(binned_data==j)./sum(binned_data<5);
+                props(i,j) = sum(binned_data==j)./sum(binned_data<(nbins/2 + 1));
             end
             for k = 1:(nbins/2)
-                props(i,j+k) = sum(binned_data==(k+j))./sum(binned_data>4);
+                props(i,j+k) = sum(binned_data==(k+j))./sum(binned_data>(nbins/2));
             end
             props(i,:) = props(i,:)/2;
         end
-%         
-%             % normalise according to number of positive vs negative thetas
-%             n_positive = sum(thetas<0);
-%             n_negative = sum(thetas>0);
-%             
-%             % bin data separately for positive and negative
-%             % values
-%             idx_pre           = 2:(nbins/2);
-%             binned_pre        = catt_bin_data( thetas(thetas<0), bins( idx_pre ) );
-%             idx_post          = (nbins/2)+2:nbins;
-%             binned_post       = 4+catt_bin_data( thetas(thetas>=0), bins( idx_post ) );
-%             
-%             % convert to proportions, separately for pre and post t 
-%             for j = 1:(nbins/2)
-%                 props(i,j) = sum(binned_pre==j)./numel(binned_pre);
-%             end
-%             for k = 1:(nbins/2)
-%                 props(i,j+k) = sum(binned_post==(k+j))./numel(binned_post);
-%             end
-%             props(i,:) = props(i,:)/2;
-%         end
-
 end
 
 %% ============================================================
@@ -131,7 +109,8 @@ expectation = repmat(1/nbins,numel(catt_group),1);
 
 for i = 1:nbins
     [output.pval(i,1), stats] = catt_bootstrap_diff(props(:,i),expectation,'within','linear');
-    output.difference(i,1)    = stats.difference;
+     output.difference(i,1)    = stats.difference;
+     output.diff_perc(i,1)     = 100*output.difference(i,1)/expectation(1);
 end
 
 % get the proportions
@@ -156,8 +135,8 @@ if verbose
     disp('Results from catt_consistency:');
     disp('====================================');
     for i = 1:nbins
-        disp(sprintf('Bin %d, %.2fpi-%.2fpi: difference = %.4f, pval = %.3f, significant = %d',...
-            [i,output.bins(i,1)/pi,output.bins(i,2)/pi, output.difference(i),output.pval(i),output.significant(i)]));
+        disp(sprintf('Bin %d, %.2fpi-%.2fpi: difference = %.2f percent, pval = %.3f, significant = %d',...
+            [i,output.bins(i,1)/pi,output.bins(i,2)/pi, output.diff_perc(i),output.pval(i),output.significant(i)]));
     end
     disp('====================================');
 end
