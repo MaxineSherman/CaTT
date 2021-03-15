@@ -5,7 +5,8 @@ Authors: Maxine Sherman, Hao-Ting Wang
 
 CaTT provides basic function to process ECG signal collected along psychology experiments and non-parametric circular statistical test designed for ECG sigbal.
 
-![](./docs/overview.png | width=500)
+<img src="./docs/overview.png" height="250">
+
 
 Manuscript under preperation.
 
