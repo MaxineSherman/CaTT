@@ -19,5 +19,5 @@ https://github.com/MaxineSherman/CaTT/archive/main.zip
 
 3. Add the directory to MATLAB path
 ```MATLAB
-addpath("/path/to/CaTT-main/")
+addpath(genpath('/path/to/CaTT-main/'))
 ```
