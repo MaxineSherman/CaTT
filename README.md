@@ -1,4 +1,4 @@
-# CaTT - Cardiac Interoception Toolbox
+# CaTT - Cardiac Timing Toolbox
 Cardiac Interoception Toolbox
 
 Authors: Maxine Sherman, Hao-Ting Wang
