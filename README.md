@@ -1,4 +1,4 @@
-# CaTT
+# CaTT - Cardiac Interoception Toolbox
 Cardiac Interoception Toolbox
 
 Authors: Maxine Sherman, Hao-Ting Wang
@@ -6,6 +6,9 @@ Authors: Maxine Sherman, Hao-Ting Wang
 CaTT provides basic function to process ECG signal collected along psychology experiments and non-parametric circular statistical test designed for ECG sigbal.
 
 ![Function provided](docs/overview.png)
+
+Manuscript under preperation.
+
 
 ## Install the MATLAB toolbox
 1. Download the toolbox as a `zip` file
