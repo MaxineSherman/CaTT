@@ -1,5 +1,5 @@
 # CaTT - Cardiac Timing Toolbox
-Cardiac Interoception Toolbox
+Cardiac Timing Toolbox
 
 Authors: Maxine Sherman, Hao-Ting Wang
 
