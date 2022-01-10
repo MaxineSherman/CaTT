@@ -3,9 +3,9 @@
 %   usage: output = catt_consistency(catt_group, [nbins], [verbose])
 %
 %   INPUTS:
-%     catt_group        - your structure containing each participant's catt
-%                          structure. Takes the form catt_group(1).catt,
-%                          catt_group(2).catt, etc.
+%     catt_group        - your cell array containing each participant's catt
+%                          structure. Takes the form catt_group{1},
+%                          catt_group{2}, etc.
 %     nbins [optional]   - number of bins to use. Default is 8.
 %     verbose [optional] - true or false. Print results in command line.
 %                          Default is true
@@ -28,11 +28,11 @@
 %                                          percentage
 %
 % ========================================================================
-%  CaTT TOOLBOX v1.1
+%  CaTT TOOLBOX v2.0
 %  Sackler Centre for Consciousness Science, BSMS
 %  m.sherman@sussex.ac.uk
-%  23/04/2020
-% ========================================================================
+%  08/08/2021
+% =========================================================================
 
 function output = catt_consistency(catt_group, nbins, verbose)
 
@@ -40,56 +40,58 @@ function output = catt_consistency(catt_group, nbins, verbose)
 if nargin == 2; verbose = true; end
 if nargin == 1; verbose = true; nbins = 8; end
 
-%% get opts 
+%% get opts
 global catt_opts
 
 switch catt_opts.wrap2
-    
-%% ============================================================
-%  Procedure for wrapping to r-peak
-%  ============================================================
-    case 'rpeak' 
-        
+
+    %% ============================================================
+    %  Procedure for wrapping to r-peak
+    %  ============================================================
+    case 'rpeak'
+
         % define bins
         bins = 0:(2*pi/nbins):2*pi;
 
         % loop participants
         for i = 1:numel(catt_group)
-            
+
             % get thetas & wrap
-            thetas            = catt_wrap2heart( catt_group(i).catt.onsets, catt_group(i).catt.IBI, catt_group(i).catt.qt );
-            
+            wrapped            = catt_wrap2heart( catt_group{i} );
+            thetas             = wrapped.onsets_rad;
+
             % bin data
-            binned   = catt_bin_data( thetas, bins(2:end) );
-            
+            binned   = catt_bin_circ_data( thetas, nbins );
+
             % convert to proportions
             for j = 1:numel(unique(binned))
                 props(i,j) = sum(binned==j)./numel(binned);
             end
-            
+
         end
 
-%% ============================================================
-%  Procedure for wrapping to t-wave
-%  ============================================================     
+        %% ============================================================
+        %  Procedure for wrapping to t-wave
+        %  ============================================================
     case 'twav'
-        
+
         % this will only work with even bin sizes
         assert( mod(nbins,2) == 0, 'When wrapping to t-wave you need an even number of bins.');
-        
+
         % define bins
         bins = -pi:(2*pi/nbins):pi;
 
         % loop participants
         for i = 1:numel(catt_group)
-            
+
             % get thetas & wrap
-            thetas            = catt_wrap2heart( catt_group(i).catt.onsets, catt_group(i).catt.IBI, catt_group(i).catt.qt );
-            
+            wrapped            = catt_wrap2heart( catt_group{i} );
+            thetas             = wrapped.onsets_rad;
+
             % bin data
             [binned_data,bin_centres,LL,UL] = catt_bin_circ_data(thetas,nbins);
-            
-            % convert to proportions, separately for pre and post t 
+
+            % convert to proportions, separately for pre and post t
             for j = 1:(nbins/2)
                 props(i,j) = sum(binned_data==j)./sum(binned_data<(nbins/2 + 1));
             end
@@ -102,15 +104,15 @@ end
 
 %% ============================================================
 % Run stats
-%  ============================================================ 
+%  ============================================================
 
 % for each section, calculate distance from expected value
 expectation = repmat(1/nbins,numel(catt_group),1);
 
 for i = 1:nbins
     [output.pval(i,1), stats] = catt_bootstrap_diff(props(:,i),expectation,'within','linear');
-     output.difference(i,1)    = stats.difference;
-     output.diff_perc(i,1)     = 100*output.difference(i,1)/expectation(1);
+    output.difference(i,1)    = stats.difference;
+    output.diff_perc(i,1)     = 100*output.difference(i,1)/expectation(1);
 end
 
 % get the proportions

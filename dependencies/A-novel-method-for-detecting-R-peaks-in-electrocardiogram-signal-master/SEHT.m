@@ -1,12 +1,18 @@
 % An R-peak detection method based on peaks of Shannon energy envelope
 %
 %
-% EDIT BY MAXINE, Oct 2020: this code doesn't run on Matlab 2020.
+% EDIT BY MAXINE:
+% Oct 2020: this code doesn't run on Matlab 2020.
 % I've edited chebyshevI_bandpass and call it separately,
 % Then pass the filter to this function.
+%
+% Aug 2021: made thresh a parameter in catt_opts
 
 
 function [out_sig, peak_locs_final] = SEHT(signal,fs,BP_filter)
+
+global catt_opts
+
     % the output: detected peak locations
     % filter the noise and baseline wander with bandpass filter
     
@@ -27,7 +33,7 @@ function [out_sig, peak_locs_final] = SEHT(signal,fs,BP_filter)
     se_n = (-1)*(norm_dn.^2).*log(norm_dn.^2);
     % apply triangle filter: implementation from An R-peak detection method
     % based on peaks of Shannon energy envelope
-    N = 55;
+    N = 55; 
     rect_filter = rectwin(N);
 
     see = conv(se_n,rect_filter,'same');
@@ -52,6 +58,6 @@ function [out_sig, peak_locs_final] = SEHT(signal,fs,BP_filter)
             end
         end
     end
-    thresh = 25;
-    peak_locs_final = real_r_peak_detection(signal,fs, peak_locs_temp, thresh);
+    
+    peak_locs_final = real_r_peak_detection(signal,fs, peak_locs_temp, catt_opts.rdetection_thresh);
     out_sig = zn;

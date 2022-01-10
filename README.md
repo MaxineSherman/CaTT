@@ -1,5 +1,6 @@
-# CaTT - Cardiac Timing Toolbox
-Cardiac Timing Toolbox
+# CaTT - Cardiac Interoception Toolbox
+
+Cardiac Interoception Toolbox
 
 Authors: Maxine Sherman, Hao-Ting Wang
 
@@ -12,6 +13,7 @@ Manuscript under preperation.
 
 
 ## Install the MATLAB toolbox
+
 1. Download the toolbox as a `zip` file
 https://github.com/MaxineSherman/CaTT/archive/main.zip
 
@@ -21,3 +23,8 @@ https://github.com/MaxineSherman/CaTT/archive/main.zip
 ```MATLAB
 addpath(genpath('your_folder_name_here/CaTT-main/'))
 ```
+
+## Runing the demo
+
+Download both dataset from this [OSF project](https://osf.ip/ye3rg/)
+Unzip and move the filders to `demos/Galvez-Pol`

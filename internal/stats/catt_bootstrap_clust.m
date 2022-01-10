@@ -6,18 +6,18 @@
 %
 %    INPUTS:
 %     catt            - your catt structure
-%               
+%
 %     Optional inputs
-%  
+%
 %     test          - a string describing the test of circular
-%                     uniformity you want to use. 
+%                     uniformity you want to use.
 %                     Options are:
 %                          - 'rayleigh' - Rayleigh's test.
 %                             Assumes a Von Mises distribution. Works best
 %                             when distribution of angles is unimodal (or
 %                             uniform).
 %                          - 'rao' [default] - Test for circular uniformity
-%                              with no distributional assumptions.   
+%                              with no distributional assumptions.
 %
 %      npermuations -  The number of permutations you want to use. Minimum 100.
 %                      Default is 10,000.
@@ -26,27 +26,27 @@
 %       pval        - pvalue for your test
 %       stats       - a structure containing the parameters for the
 %                     permutation test, the p-value and association statistic (r or rho)
-%       catt        - load the output back into your intero structure. This
-%                     is important if you want to run group analyses later on 
-%                     
+%       catt        - load the output back into your catt structure. This
+%                     is important if you want to run group analyses later on
+%
 %      Example:
 %        1. To test whether people are more likely to give a motor response
 %           at some point in the cardiac cycle, first wrap your onsets to the
 %           cardiac cycle by calling intero_wrap2heart. To run your analysis
-%           using the omnibus test and 5000 permutations, call:
-%           [pval, stats, catt] = catt_bootstrap_clust( catt, 'omnibus', 5000)
+%           using the rayleigh test and 5000 permutations, call:
+%           [pval, stats, catt] = catt_bootstrap_clust( catt, 'rayleigh', 5000)
 %
 %        2. To perform this for all participants, you would do:
 %           for subj = 1:n
 %                 [pval(subj), stats{subj}, group(subj).catt] =
-%                 catt_bootstrap_clust( group(subj).catt, 'omnibus', 5000);
+%                 catt_bootstrap_clust( group(subj).catt, 'rayleigh', 5000);
 %           end
 %
 % ========================================================================
-%  CaTT TOOLBOX v1.1
+%  CaTT TOOLBOX v2.0
 %  Sackler Centre for Consciousness Science, BSMS
 %  m.sherman@sussex.ac.uk
-%  23/04/2020
+%  08/08/2021
 % ========================================================================
 
 function [pval, stats, catt] = catt_bootstrap_clust(catt, varargin)
@@ -59,8 +59,12 @@ stats.opt.nloops    = 10000;
 stats.opt.test      = 'rao';
 
 % extract relevant info from the structure
-IBIs                = catt.IBI;
-onsets              = catt.onsets;
+IBIs                = [catt.RR.IBI];
+onsets              = [catt.RR.onset];
+
+% bin IBIs without an onset
+IBIs                = IBIs( ~isnan(onsets) );
+onsets              = onsets( ~isnan(onsets) );
 
 %% ========================================================================
 %  Check required inputs
@@ -83,24 +87,24 @@ onsets = reshape(onsets, numel(onsets), 1);
 %  ========================================================================
 
 for i = 1:numel(varargin)
-    if strcmpi(varargin{i},'rao') 
+    if strcmpi(varargin{i},'rao')
         stats.opt.test = 'rao';
     end
-    if strcmpi(varargin{i},'rayleigh') 
+    if strcmpi(varargin{i},'rayleigh')
         stats.opt.test = 'rayleigh';
     end
     if isnumeric(varargin{i})
         stats.opt.nloops = varargin{i};
         assert( stats.opt.nloops>=100, 'Error in <strong>catt_bootstrap_clust</strong>: use at least 100 permutations');
     end
-    
+
     % check for nonsense
     if ischar(varargin{i}) & ...
             ~strcmpi(varargin{i},'rao') & ...
             ~strcmpi(varargin{i},'rayleigh');
-            
+
         warning(['Warning in <strong>catt_bootstrap_clust<\strong>: input ' varargin{i} ' is unknown. Ignoring...']);
-        
+
     end
 end
 
@@ -111,10 +115,10 @@ end
 
 if strcmpi(stats.opt.test,'rao')
     stats.opt.r_fcn = @(x) circ_raotest(x);
-    
-elseif strcmpi(stats.opt.test,'rayleigh') 
+
+elseif strcmpi(stats.opt.test,'rayleigh')
     stats.opt.r_fcn = @(x) circ_rtest(x);
- 
+
 end
 
 %% ========================================================================
@@ -122,26 +126,27 @@ end
 %  ========================================================================
 
 %% first, wrap to heart and calculate true test stat
-thetas = catt_wrap2heart( onsets, IBIs, catt.qt );
-[~,stats.test_stat] = stats.opt.r_fcn(thetas);
+catt.wrapped = catt_wrap2heart( onsets, IBIs, catt.qt );
+[~,stats.test_stat] = stats.opt.r_fcn(catt.wrapped.onsets_rad);
 
 for i = 1:stats.opt.nloops
-    
-    % shuffle
-    V = catt_wrap2heart(onsets, Shuffle(IBIs), catt.qt);
-    
+
+    % shuffle & rewrap
+    V = catt_wrap2heart(onsets, shuffle(IBIs), catt.qt);
+    V = V.onsets_rad;
+
     % run test
     [~,stats.null(i,1)] = stats.opt.r_fcn(V);
-    
+
 end
 
 % get the pvalue
 pval = sum( stats.null >= stats.test_stat )./stats.opt.nloops;
 
- % get the zscore, for combining across participants
+% get the zscore, for combining across participants
 stats.zscore = (stats.test_stat - mean(stats.null))./std(stats.null);
-    
-% finally, load everything into intero
+
+% finally, load everything into catt
 catt.stats = stats;
 catt.stats.pval = pval;
 

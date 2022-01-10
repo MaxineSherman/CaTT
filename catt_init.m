@@ -5,12 +5,17 @@
 %   Initialises the default simulation & plotting parameters used by this
 %   toolbox. Change these defaults below.
 %
+% Version 2 - change log
+%
+% i)  implemented t-wave detection (see catt_detect_t)
+% ii) added threshold for rpeak detection algorithm as a parameter
+% iii) added removal of RR intervals based on IBI
 % ========================================================================
-%  CaTT TOOLBOX v1.1
+%  CaTT TOOLBOX v2.0
 %  Sackler Centre for Consciousness Science, BSMS
 %  m.sherman@sussex.ac.uk
-%  23/04/2020
-% =========================================================================
+%  08/08/2021
+% ========================================================================
 
 function catt_opts = catt_init
 
@@ -37,6 +42,28 @@ catt_opts.BP_filter = chebyshevI_bandpass(catt_opts.fs); % create the filter for
 catt_opts.HRV_method = 'RMSSD'; 
 
 %% ========================================================================
+%  Set parameters for r-peak detection
+% =========================================================================
+
+% the threshold will depend on the rough ECG amplitude of your r-peaks.
+% this value should be greater than your t-wave amplitude, and less than
+% your rpeak amplitude.
+%
+% hopefully 100 is ok, but if you're finding that the algorithm is picking
+% up, say, t-peaks, then play with this and see if it fixes things.
+catt_opts.rdetection_thresh = 100;
+
+%% ========================================================================
+%  Set parameters for t-wave detection
+% =========================================================================
+
+% Set the minimum & maximum physiologically plausible rpeak-tpeak
+% interval (in msec).
+% The algorithm will search for the t-peak within these bounds.
+catt_opts.RT_min = 200; 
+catt_opts.RT_max = 500; 
+
+%% ========================================================================
 %  Set cardiac timing parameters
 % =========================================================================
 
@@ -47,7 +74,8 @@ catt_opts.HRV_method = 'RMSSD';
 %   - 'sagie': estimate from Sagie's formula
 %   - 'bazett': estimate from Bazett's formula
 %   - 'fridericia': estimate from Fridericia's formula
-catt_opts.qt_method  = 'bazett'; 
+%   - 'data': use the RT interval obtained from t-wave detection
+catt_opts.qt_method  = 'data'; 
 
 % set the default/assumed average q to end of t interval (msec)
 catt_opts.qt_default = 400;
@@ -60,6 +88,16 @@ catt_opts.qr = 50;
 %     - 'twav' (systole)
 %     - 'rpeak' (diastole)
 catt_opts.wrap2     = 'twav';
+
+%% ========================================================================
+%  Quality checks: set maximum and minimum BPM.
+%  RR intervals where estimated BPM is outside of these bounds will be
+%  flagged by catt_IBI
+% =========================================================================
+
+catt_opts.BPM_max = 160; % IBIs with a BPM higher than this will be excluded. To switch this off, set to inf 
+catt_opts.BPM_min = 40; % IBIs with a BPM lower than this will be excluded. To switch this off, set to 0 
+catt_opts.BPM_extreme_z = 3; % what z-score is considered extreme. Set to inf to keep all IBIs, irrespective of zscore.
 
 %% ========================================================================
 %  Set initial plotting parameters
@@ -95,5 +133,15 @@ catt_opts.plot.grid   = 'on';
 %% settings specific to circular plots
 catt_opts.plot.circ_nbins = 15;
 
+%% print welcome to command line
+clc;
+disp(['% -------------------------------------------- %'])
+disp(['%   The Cardiac Timing Toolbox (CaTT) v2.0     %'])
+disp(['%                                              %'])
+disp(['%   Example scripts can be found in the demos  %'])
+disp(['%   folder.                                    %'])
+disp(['%   Toolbox parameters can be found in the     %'])
+disp(['%   catt_opts structure in your workspace.     %'])
+disp(['% -------------------------------------------- %'])
 end
 

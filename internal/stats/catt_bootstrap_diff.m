@@ -37,8 +37,8 @@
 %        design (e.g. patients vs controls), call:
 %        [pval, stats] = catt_bootstrap_diff( patients, controls, 'between')
 %
-%        2. If you predict patients > controls and want a one-tailed test, call:
-%        [pval, stats] = catt_bootstrap_diff( patients, controls, 'between', 'higher')
+%        2. If you predict patients > controls and want a one-tailed test with 5000 permutations, call:
+%        [pval, stats] = catt_bootstrap_diff( patients, controls, 'between', 'higher', 5000)
 %
 %        3. For a within-subjects linear test of difference based on medians,
 %           e.g. testing for differences in median RT for incorrect vs correct responses, call:
@@ -48,10 +48,10 @@
 %                                               'median', ...
 %                                               'linear');
 % ========================================================================
-%  CaTT TOOLBOX v1.1
+%  CaTT TOOLBOX v2.0
 %  Sackler Centre for Consciousness Science, BSMS
 %  m.sherman@sussex.ac.uk
-%  23/04/2020
+%  08/08/2021
 % ========================================================================
 
 function [pval,stats] = catt_bootstrap_diff(group1, group2, design, varargin )
@@ -60,7 +60,7 @@ function [pval,stats] = catt_bootstrap_diff(group1, group2, design, varargin )
 %  Set defaults
 %  ========================================================================
 
-%% fix rng 
+%% fix rng for reproducability
 rng(11);
 
 stats.opt.method    = 'mean';
@@ -99,18 +99,18 @@ stats.opt.design    = design;
 %  ========================================================================
 
 for i = 1:numel(varargin)
-    
+
     if strcmpi(varargin{i},'median');   stats.opt.method    = 'median';   end
-    if strcmpi(varargin{i},'circular'); stats.opt.data_type = 'circular'; end
+    if strcmpi(varargin{i},'linear');   stats.opt.data_type = 'linear'; end
     if strcmpi(varargin{i},'higher');   stats.opt.direction = 'higher';   end
     if strcmpi(varargin{i},'lower');    stats.opt.direction = 'lower';    end
-    
+
     % check for minimum 100 permutations
     if isnumeric(varargin{i})
         stats.opt.nloops = varargin{i};
         assert( stats.opt.nloops>=100, 'Error in <strong>catt_bootstrap_diff</strong>: use at least 100 permutations');
     end
-    
+
     % check for nonsense string inputs
     if ischar(varargin{i}) & ...
             ~strcmpi(varargin{i},'circular') & ...
@@ -120,9 +120,9 @@ for i = 1:numel(varargin)
             ~strcmpi(varargin{i},'twotailed') & ...
             ~strcmpi(varargin{i},'higher') & ...
             ~strcmpi(varargin{i},'lower')
-        
+
         warning(['Warning in <strong>catt_bootstrap_diff<\strong>: input ' varargin{i} ' is unknown. Ignoring...']);
-        
+
     end
 end
 
@@ -132,16 +132,16 @@ end
 %  ========================================================================
 
 if strcmpi(stats.opt.data_type,'circular')
-    
+
     % check we're in radians, not degrees [this is a weak test!!]
     if max( abs(group1) ) > 12 | max( abs(group2) ) > 12
         warning('Warning in <strong>catt_bootstrap_diff<\strong>: Your data look like degrees, not radians. Please check & rerun if neccessary...');
     end
-    
+
     % wrap data to 2pi
     group1 = wrapTo2Pi( group1 );
     group2 = wrapTo2Pi( group2 );
-    
+
 end
 
 %% ========================================================================
@@ -150,27 +150,27 @@ end
 %  ========================================================================
 
 switch stats.opt.method
-    
+
     %% mean difference
     case 'mean'
         switch stats.opt.data_type
-            
+
             case 'linear'; stats.opt.diff_fcn = @(g1,g2) mean(g1)-mean(g2);
-            
+
             case 'circular'
                 switch stats.opt.design
                     case 'within';  stats.opt.diff_fcn = @(g1,g2) circ_mean( circ_dist(g1,g2) );
                     case 'between'; stats.opt.diff_fcn = @(g1,g2) circ_dist(circ_mean(g1),circ_mean(g2));
                 end
         end
-    
-    %% median difference
+
+        %% median difference
     case 'median'
-        
+
         switch stats.opt.data_type
-            
+
             case 'linear'; stats.opt.diff_fcn = @(g1,g2) median(g1)-median(g2);
-            
+
             case 'circular'
                 switch stats.opt.design
                     case 'within';  stats.opt.diff_fcn = @(g1,g2) circ_median( circ_dist(g1,g2) );
@@ -186,33 +186,33 @@ end
 stats.difference = stats.opt.diff_fcn(group1,group2);
 
 switch stats.opt.design
-    
+
     case 'between'
         for i = 1:stats.opt.nloops
-            
+
             % shuffle data
             dat = [group1;group2]; % pool the data
             n1  = numel(group1); n2 = numel(group2); % get n for each group
             k1  = randsample(1:numel(dat),n1); % get datapoints for shuffled group 1
             k2  = setdiff(1:numel(dat),k1); % datapoints for shuffled group 2 are those not in group 1
             G1  = dat(k1); G2 = dat(k2);
-            
+
             % compute difference
             stats.null(i,1)   = stats.opt.diff_fcn(G1,G2);
-            
+
         end
-        
+
     case 'within'
         for i = 1:stats.opt.nloops
-            
+
             % shuffle data
             order = rand(numel(group1),1) < 0.5; % for each participant randomly flip the condition labels
             G1    = group1; G1(order==1) = group2(order==1);
             G2    = group2; G2(order==1) = group1(order==1);
-            
+
             % compute difference
             stats.null(i,1) = stats.opt.diff_fcn(G1,G2);
-            
+
         end
 end
 

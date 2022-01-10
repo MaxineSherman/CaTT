@@ -96,7 +96,7 @@ for i = 1:numel(varargin)
     if strcmpi(varargin{i},'lower')
         stats.opt.direction = 'lower';
     end
-    
+
     % check for nonsense
     if ischar(varargin{i}) & ...
             ~strcmpi(varargin{i},'spearman') & ...
@@ -106,9 +106,9 @@ for i = 1:numel(varargin)
             ~strcmpi(varargin{i},'twotailed') & ...
             ~strcmpi(varargin{i},'higher') & ...
             ~strcmpi(varargin{i},'lower')
-        
+
         warning(['Warning in <strong>catt_bootstrap_corr<\strong>: input ' varargin{i} ' is unknown. Ignoring...']);
-        
+
     end
 end
 
@@ -124,13 +124,13 @@ str = 'Warning in <strong>catt_bootstrap_corr<\strong>: Your data look like degr
 % process DV1
 if strcmpi(type1,'linear'); stats.opt.dv1 = 'linear';
 else;                       stats.opt.dv1 = 'circular';
-    
+
     % check we're in radians, not degrees
     if max( abs(DV1) ) > 10
         warning(str);
         stats.opt.warning{1} = ['DV1: ' str];
     end
-    
+
     % wrap data to 2pi
     DV1 = wrapTo2Pi( DV1 );
 end
@@ -138,13 +138,13 @@ end
 % process dv2
 if strcmpi(type2,'linear'); stats.opt.dv2 = 'linear';
 else;                       stats.opt.dv2 = 'circular';
-    
+
     % check we're in radians, not angles
     if max( abs(DV2) ) > 10
         warning(str);
         stats.opt.warning{2} = ['DV2: ' str];
     end
-    
+
     % wrap data to 2pi
     DV2 = wrapTo2Pi( DV2 );
 end
@@ -155,14 +155,14 @@ end
 %  ========================================================================
 
 if strcmpi(stats.opt.dv1,'circular') & strcmpi(stats.opt.dv2,'circular')
-    stats.opt.r_fcn = @(x,y) circ_cc(x,y);
-    
+    stats.opt.r_fcn = @(x,y) circ_corrcc(x,y);
+
 elseif strcmpi(stats.opt.dv1,'circular') & strcmpi(stats.opt.dv2,'linear')
-    stats.opt.r_fcn = @(x,y) circ_cl(x,y);
-    
+    stats.opt.r_fcn = @(x,y) circ_corrcl(x,y);
+
 elseif strcmpi(stats.opt.dv1,'linear') & strcmpi(stats.opt.dv2,'circular')
-    stats.opt.r_fcn = @(x,y) circ_cl(y,x);
-    
+    stats.opt.r_fcn = @(x,y) circ_corrcl(y,x);
+
 elseif strcmpi(stats.opt.dv1,'linear') & strcmpi(stats.opt.dv2,'linear')
     if strcmpi(stats.opt.test_type,'spearman')
         stats.opt.r_fcn = @(x,y) corr(y,x,'type','spearman');
@@ -178,13 +178,13 @@ end
 stats.rho = stats.opt.r_fcn(DV1,DV2);
 
 for i = 1:stats.opt.nloops
-    
+
     % shuffle DV2
     dv2 = DV2(randsample(1:numel(DV2),numel(DV2)));
-    
+
     % compute association
     stats.null(i,1) = stats.opt.r_fcn(DV1,dv2);
-    
+
 end
 
 switch stats.opt.direction
