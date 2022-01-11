@@ -60,9 +60,6 @@ function [pval,stats] = catt_bootstrap_diff(group1, group2, design, varargin )
 %  Set defaults
 %  ========================================================================
 
-%% fix rng for reproducability
-rng(11);
-
 stats.opt.method    = 'mean';
 stats.opt.nloops    = 10000;
 stats.opt.data_type = 'circular';
