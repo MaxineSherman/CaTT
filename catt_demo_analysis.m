@@ -53,28 +53,57 @@ try
     input('Press any key to continue');disp(sprintf('\n'));
 
     %% ========================================================================
-    %  We'll be running analyses on the blinks data presented in Galvez-Pol et al.
+    %  Download the data
+    %
+    %  We'll be running analyses on the data presented in Galvez-Pol et al.
     %  (2019), which can be found here: https://osf.io/ye3rg/
     %
     %  Galvez-Pol, A., McConnell, R., & Kilner, J. M. (2020).
     %  Active sampling in visual search is coupled to the cardiac cycle.
     %  Cognition, 196, 104149.
-    %
-    %  Start by finding the data
     %  ========================================================================
 
-    disp('We need to get the data. The data can be found in /demos/Galvez-Pol');
-    disp('They come from here: https://osf.io/ye3rg/');
+    dload = exist('demo data/blinks')==0 | exist('demo data/saccades and fixations')==0;
+
+    if dload
+        disp('We need to get the data. The data can be found here: https://osf.io/ye3rg/');
+        disp('The code will download the data for you.');
+        input('Press any key to continue');disp(sprintf('\n'));
+
+        % make demo data folder if it doesn't already exist
+        if ~exist('demo data','dir'); mkdir('demo data'); end
+
+        % download the blinks data + unzip
+        disp('downloading & unzipping blinks data...');
+        websave('demo data/Blinks.zip','https://osf.io/h5x84/download');
+        unzip('Blinks.zip','demo data/blinks');
+        disp('done.');
+
+        % download the saccades & fixations data + unzip
+        disp('downloading & unzipping saccades and fixations data...');
+        websave('demo data/Saccades and Fixations.zip','https://osf.io/rbt7w/download');
+        unzip('Saccades and Fixations.zip','demo data/Saccades and Fixations');
+
+        disp('done');
+        disp(sprintf('\n'));
+    end
+
+    %% ========================================================================
+    %  Load the data
+    %  ========================================================================
+
+    addpath(genpath('demo data/Saccades and Fixations'));
+    addpath(genpath('demo data/blinks'));
 
     disp('Using the function <strong>dir</strong> we are going to find all the saccades and blinks datasets.')
 
     % download both dataset from this OSF project https://osf.ip/ye3rg/
-    % unzip and move the filders to `demos/Galvez-Pol`
-    datafiles_saccades = dir(['demos/Galvez-Pol/Saccades and Fixations/Sub*.mat']);
-    datafiles_saccades = arrayfun(@(x) ['demos/Galvez-Pol/Saccades and Fixations/' x.name],datafiles_saccades,'UniformOutput',false);
+    % unzip and move the filders to `Galvez-Pol`
+    datafiles_saccades = dir(['demo data/Saccades and Fixations/Sub*.mat']);
+    datafiles_saccades = arrayfun(@(x) ['demo data/Saccades and Fixations/' x.name],datafiles_saccades,'UniformOutput',false);
 
-    datafiles_blinks = dir(['demos/Galvez-Pol/Blinks Data/Sub*.mat']);
-    datafiles_blinks = arrayfun(@(x) ['demos/Galvez-Pol/Blinks Data/' x.name],datafiles_blinks,'UniformOutput',false);
+    datafiles_blinks = dir(['demo data/Blinks Data/Sub*.mat']);
+    datafiles_blinks = arrayfun(@(x) ['demo data/Blinks Data/' x.name],datafiles_blinks,'UniformOutput',false);
 
     %% ========================================================================
     %  Saccades & fixations data: load subj files & put into catt format
