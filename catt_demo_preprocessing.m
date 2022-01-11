@@ -31,12 +31,37 @@ try
     input('Press any key to continue');disp(sprintf('\n'));
 
     % ==================================================
-    % Import the data
+    % Download the data
     % ==================================================
 
-    disp('We need to load our data.');
-    disp('Example data can be found in the folder /demos/Sample raw data.');
+    % if the data haven't already been downloaded, download them
+    dload = exist('demo data/sample_behaviour.csv')==0 | exist('demo data/sample_ECG.tsv')==0;
 
+    if dload
+        disp('We need to get the data. The data can be found here: https://osf.io/e9df4/');
+        disp('The code will download the data for you now.');
+        input('Press any key to continue');disp(sprintf('\n'));
+
+        % make demo data folder if it doesn't already exist
+        if ~exist('demo data','dir'); mkdir('demo data'); end
+
+        % download the sample behaviour & sample ECG
+        disp('downloading sample behavioural data...'); % update researcher
+        websave('demo data/sample_behaviour.csv','https://osf.io/82kwf/download'); % download to arg1 from arg2
+        disp('done.');
+
+        % download the sample ECG
+        disp('downloading sample ECG data...');
+        websave('demo data/sample_ECG.tsv','https://osf.io/n5ksd/download'); % download to arg1 from arg2
+        disp('done.');
+    end
+
+    % add to path
+    addpath(genpath('demo data'));disp(sprintf('\n'));
+
+    % ==================================================
+    % Import the data
+    % ==================================================
     disp('The ECG data is called sample_ECG.tsv.');
     disp('To extract it we will use the function <strong>importdata</strong>.');
     % Our sample data are in a text file called sample_ECG.tsv
