@@ -10,6 +10,8 @@
 % i)  implemented t-wave detection (see catt_detect_t)
 % ii) added threshold for rpeak detection algorithm as a parameter
 % iii) added removal of RR intervals based on IBI
+%
+% update 26/01/2021: if CaTT has not been added to path then the toolbox throws an informative error & gives instructions on how to do it
 % ========================================================================
 %  CaTT TOOLBOX v2.0
 %  Sackler Centre for Consciousness Science, BSMS
@@ -18,6 +20,21 @@
 % ========================================================================
 
 function catt_opts = catt_init
+
+% ========================================================================
+% Check CaTT has been added to path
+% ========================================================================
+
+if exist('chebyshevI_bandpass.m')~=2
+    clc;
+    disp('<strong>CaTT: Please add CaTT (with all it''s subfolders) to your path before initialising the toolbox.</strong>');
+    disp('<strong>If you are in the main CaTT folder, write addpath(genpath(cd)) at the command line</strong>');
+    error('Error: CaTT not fully added to path');
+end
+
+%% ========================================================================
+%  Initialise 
+% =========================================================================
 
 global catt_opts
 
