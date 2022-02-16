@@ -63,7 +63,8 @@ catt_opts.HRV_method = 'RMSSD';
 % =========================================================================
 
 % the threshold will depend on the rough ECG amplitude of your r-peaks.
-% this value should be greater than your t-wave amplitude, and less than
+% it is expressed in arbitrary units.
+% you should set it so that the code thresholds higher than your t-wave amplitude, and lower than
 % your rpeak amplitude.
 %
 % hopefully 100 is ok, but if you're finding that the algorithm is picking
