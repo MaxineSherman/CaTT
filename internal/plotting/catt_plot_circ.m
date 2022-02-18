@@ -36,7 +36,7 @@
 %                    the mean, if the resultant vector is small then you may 
 %                    not be able to see it on the plot.
 %
-%    'zero':         'T' or 'R' [default is R]. Specifies whether 0/2pi is
+%    'zero':         'systole' or 'diastole' [default is 'systole']. Specifies whether 0/2pi is
 %                     systole (when you lock to the r-peak) or diastole
 %                     (for when you lock to the t-wave)
 %                     
@@ -61,6 +61,8 @@
 %
 %        catt_plot_circ( {fear}, {'fear'}, 'participants', 'on' , 'mean', 'on', 'histogram', 'off' )
 %                                
+% Update 18/02/2022 - fixed error in help file. The zero point should be 
+% specified as 'systole' or 'diastole', not 'T' or 'R'
 % ========================================================================
 %  CaTT TOOLBOX v2.0
 %  Sackler Centre for Consciousness Science, BSMS
