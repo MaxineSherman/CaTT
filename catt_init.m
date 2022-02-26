@@ -10,8 +10,7 @@
 % i)  implemented t-wave detection (see catt_detect_t)
 % ii) added threshold for rpeak detection algorithm as a parameter
 % iii) added removal of RR intervals based on IBI
-%
-% update 26/01/2021: if CaTT has not been added to path then the toolbox throws an informative error & gives instructions on how to do it
+% iv) added check for circstat & for subfolders being added to path in new subfunction catt_check_dependencies
 % ========================================================================
 %  CaTT TOOLBOX v2.0
 %  Sackler Centre for Consciousness Science, BSMS
@@ -21,16 +20,12 @@
 
 function catt_opts = catt_init
 
-% ========================================================================
-% Check CaTT has been added to path
-% ========================================================================
+%% ========================================================================
+%  Check for dependencies (that all of CaTT is added to path & circstat is
+%  installed
+% =========================================================================
 
-if exist('chebyshevI_bandpass.m')~=2
-    clc;
-    disp('<strong>CaTT: Please add CaTT (with all it''s subfolders) to your path before initialising the toolbox.</strong>');
-    disp('<strong>If you are in the main CaTT folder, write addpath(genpath(cd)) at the command line</strong>');
-    error('Error: CaTT not fully added to path');
-end
+catt_check_dependencies;
 
 %% ========================================================================
 %  Initialise 
@@ -63,8 +58,7 @@ catt_opts.HRV_method = 'RMSSD';
 % =========================================================================
 
 % the threshold will depend on the rough ECG amplitude of your r-peaks.
-% it is expressed in arbitrary units.
-% you should set it so that the code thresholds higher than your t-wave amplitude, and lower than
+% this value should be greater than your t-wave amplitude, and less than
 % your rpeak amplitude.
 %
 % hopefully 100 is ok, but if you're finding that the algorithm is picking
@@ -163,3 +157,44 @@ disp(['%   catt_opts structure in your workspace.     %'])
 disp(['% -------------------------------------------- %'])
 end
 
+
+
+
+%% ========================================================================
+%CATT_CHECK_DEPENDENCIES check that you've got everything added to path & circstat installed  
+%   usage: catt_opts = catt_check_dependencies
+%
+% ========================================================================
+%  CaTT TOOLBOX v2.0
+%  Sackler Centre for Consciousness Science, BSMS
+%  m.sherman@sussex.ac.uk
+%  26/02/2022
+% ========================================================================
+
+function catt_check_dependencies
+
+% ========================================================================
+% Check CaTT has been added to path
+% ========================================================================
+
+if exist('chebyshevI_bandpass.m')~=2
+    clc;
+    disp('<strong>CaTT: Please add CaTT (with all it''s subfolders) to your path before initialising the toolbox.</strong>');
+    disp('<strong>If you are in the main CaTT folder, write addpath(genpath(cd)) at the command line</strong>');
+    error('Error: CaTT not fully added to path');
+end
+
+% ========================================================================
+% Check we have the circstat toolbox. If not, download & unzip
+% ========================================================================
+
+if exist('dependencies/CircStat','dir')==0
+    disp('CircStat toolbox not found.');
+    disp('Downloading & unzipping...');
+
+    websave('dependencies/CircStat','https://github.com/circstat/circstat-matlab/archive/refs/heads/master.zip'); % download
+    unzip('dependencies/CircStat.zip','dependencies/CircStat'); % unzip
+    disp(sprintf('done.\n'));
+end
+
+end
