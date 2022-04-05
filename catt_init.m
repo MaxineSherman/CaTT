@@ -11,6 +11,9 @@
 % ii) added threshold for rpeak detection algorithm as a parameter
 % iii) added removal of RR intervals based on IBI
 % iv) added check for circstat & for subfolders being added to path in new subfunction catt_check_dependencies
+%
+%
+% Edit: 5/4/22. Bootstrapping is broken - CaTT is temporarily disabled
 % ========================================================================
 %  CaTT TOOLBOX v2.0
 %  Sackler Centre for Consciousness Science, BSMS
@@ -19,6 +22,11 @@
 % ========================================================================
 
 function catt_opts = catt_init
+
+%% ========================================================================
+%  Warning - CaTT is currently broken. Do not use.
+% =========================================================================
+error('There is a problem with the toolbox in its current form - the bootstrapping is broken. Apologies for the inconvinience, it will be fixed and updated very soon.');
 
 %% ========================================================================
 %  Check for dependencies (that all of CaTT is added to path & circstat is
