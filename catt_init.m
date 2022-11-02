@@ -24,11 +24,6 @@
 function catt_opts = catt_init
 
 %% ========================================================================
-%  Warning - CaTT is currently broken. Do not use.
-% =========================================================================
-error('There is a problem with the toolbox in its current form - the bootstrapping is broken. Apologies for the inconvinience, it will be fixed and updated very soon.');
-
-%% ========================================================================
 %  Check for dependencies (that all of CaTT is added to path & circstat is
 %  installed
 % =========================================================================
