@@ -16,8 +16,14 @@
 %                             Assumes a Von Mises distribution. Works best
 %                             when distribution of angles is unimodal (or
 %                             uniform).
-%                          - 'rao' [default] - Test for circular uniformity
+%                              Higher test statistics -> less uniform
+%                          - 'rao' - Test for circular uniformity
 %                              with no distributional assumptions.
+%                              Higher test statistics -> less uniform
+%                          - 'otest' [default] - Omnibus test. Works well
+%                          on multimodal data. Permutation test behaves
+%                          well with this.
+%                          Lower test statistics -> less uniform
 %
 %      npermuations -  The number of permutations you want to use. Minimum 100.
 %                      Default is 10,000.
@@ -42,8 +48,12 @@
 %                 catt_bootstrap_clust( group(subj).catt, 'rayleigh', 5000);
 %           end
 %
+% % Update: v2.1, 2022/04/21
+%     - pseudo-shuffling is now performed by catt_shuffle
+%     - catt_shuffle requires a rehuffling of catt.qt - this is now done
+%     too
 % ========================================================================
-%  CaTT TOOLBOX v2.0
+%  CaTT TOOLBOX v2.1
 %  Sackler Centre for Consciousness Science, BSMS
 %  m.sherman@sussex.ac.uk
 %  08/08/2021
@@ -56,7 +66,8 @@ function [pval, stats, catt] = catt_bootstrap_clust(catt, varargin)
 %  ========================================================================
 global catt_opts
 stats.opt.nloops    = 10000;
-stats.opt.test      = 'rao';
+stats.opt.test      = 'otest';
+t0                  = tic;
 
 % extract relevant info from the structure
 IBIs                = [catt.RR.IBI];
@@ -87,6 +98,9 @@ onsets = reshape(onsets, numel(onsets), 1);
 %  ========================================================================
 
 for i = 1:numel(varargin)
+    if strcmpi(varargin{i},'otest')
+        stats.opt.test = 'otest';
+    end
     if strcmpi(varargin{i},'rao')
         stats.opt.test = 'rao';
     end
@@ -101,7 +115,8 @@ for i = 1:numel(varargin)
     % check for nonsense
     if ischar(varargin{i}) & ...
             ~strcmpi(varargin{i},'rao') & ...
-            ~strcmpi(varargin{i},'rayleigh');
+            ~strcmpi(varargin{i},'rayleigh') & ...
+            ~strcmpi(varargin{i},'otest');
 
         warning(['Warning in <strong>catt_bootstrap_clust<\strong>: input ' varargin{i} ' is unknown. Ignoring...']);
 
@@ -119,6 +134,9 @@ if strcmpi(stats.opt.test,'rao')
 elseif strcmpi(stats.opt.test,'rayleigh')
     stats.opt.r_fcn = @(x) circ_rtest(x);
 
+elseif strcmpi(stats.opt.test,'otest')
+    stats.opt.r_fcn = @(x) circ_otest(x);
+
 end
 
 %% ========================================================================
@@ -132,8 +150,10 @@ catt.wrapped = catt_wrap2heart( onsets, IBIs, catt.qt );
 for i = 1:stats.opt.nloops
 
     % shuffle & rewrap
-    V = catt_wrap2heart(onsets, shuffle(IBIs), catt.qt);
-    V = V.onsets_rad;
+    [sIBI, sOnset] = catt_shuffle(IBIs, onsets);
+
+    V = catt_wrap2heart(sOnset, sIBI, catt.qt);
+    V = wrapTo2Pi(V.onsets_rad);
 
     % run test
     [~,stats.null(i,1)] = stats.opt.r_fcn(V);
@@ -144,7 +164,11 @@ end
 pval = sum( stats.null >= stats.test_stat )./stats.opt.nloops;
 
 % get the zscore, for combining across participants
-stats.zscore = (stats.test_stat - mean(stats.null))./std(stats.null);
+if strcmpi(stats.opt.test,'otest') % lower is better
+    stats.zscore = -(stats.test_stat - mean(stats.null))./std(stats.null);
+else % higher is better
+    stats.zscore = (stats.test_stat - mean(stats.null))./std(stats.null);
+end
 
 % finally, load everything into catt
 catt.stats = stats;
@@ -153,6 +177,8 @@ catt.stats.pval = pval;
 % also, log what we've wrapped to
 catt.stats.opt.wrap2 = catt_opts.wrap2;
 catt.stats.opt.qt    = catt.qt;
+catt.stats.runtime   = toc(t0);
+toc(t0);
 end
 
 

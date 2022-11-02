@@ -38,6 +38,10 @@
 % catt.tlock.RT_idx{t}(iR)       = Rpeak-Tend interval, in samples;
 % catt.tlock.RT_msec{t}(iR)      = Rpeak-Tend interval, in msec;
 %
+%
+% update: May 2022
+%         Fixed potential for error when the end of the t-wave search region falls
+%         outside of the ECG data
 % ========================================================================
 %  CaTT TOOLBOX v2
 %  Sackler Centre for Consciousness Science, BSMS
@@ -101,36 +105,51 @@ for iR = 1:numel( catt.tlock.rPeaks_idx ) % T always follows R, so we're going t
         % We want to search from tPeak to tPeak + 200msec
         msec200           = (200/(1000/catt_opts.fs));
         search_region_idx = catt.tlock.tPeaks_idx(iR):(catt.tlock.tPeaks_idx(iR) + msec200);
-        search_region_ECG = catt.ECG.processed( search_region_idx );
-        search_region_t   = catt.ECG.times( search_region_idx );
 
-        % Calculate derivative for tPeaks:tPeaks+200 (search_region_idx)
-        % & find point of maximum derivative. This gives (xm,ym)
-        dy                 = diff( search_region_ECG )./diff( search_region_t );
-        xm                 = find( abs(dy)==max(abs(dy)) ); xm = xm(1);
-        ym                 = dy(xm);
-        xm                 = search_region_idx( xm );
+        try % this will fail if we fall outside of the search region
+            search_region_ECG = catt.ECG.processed( search_region_idx );
+            search_region_t   = catt.ECG.times( search_region_idx );
 
-        % Set (xr,yr), which is a reference point far away from T but
-        % before R. We set it as tmax.
-        xr            = search_region_idx(end)+10;
-        yr            = catt.ECG.processed(xr);
+            % Calculate derivative for tPeaks:tPeaks+200 (search_region_idx)
+            % & find point of maximum derivative. This gives (xm,ym)
+            dy                 = diff( search_region_ECG )./diff( search_region_t );
+            xm                 = find( abs(dy)==max(abs(dy)) ); xm = xm(1);
+            ym                 = dy(xm);
+            xm                 = search_region_idx( xm );
 
-        % cycle through all xm < x < xr
-        % calculate area
-        Xi = (xm+1):(xr-1);
-        A  = 0.5.*( ym - catt.ECG.processed(Xi)').*(2.*xr - Xi - xm );
-        xi = find( A == max(A) );
+            % Set (xr,yr), which is a reference point far away from T but
+            % before R. We set it as tmax.
+            xr            = search_region_idx(end)+10;
+            yr            = catt.ECG.processed(xr);
 
-        % express the position & amplitude & timing of tEnd in terms of the
-        % whole ECG dataset
-        catt.tlock.tEnds_idx(iR)  = Xi(xi);
-        catt.tlock.tEnds_v(iR)    = catt.ECG.processed( Xi(xi) );
-        catt.tlock.tEnds_msec(iR) = catt.ECG.times( Xi(xi) );
+            % cycle through all xm < x < xr
+            % calculate area
+            Xi = (xm+1):(xr-1);
+            A  = 0.5.*( ym - catt.ECG.processed(Xi)').*(2.*xr - Xi - xm );
+            xi = find( A == max(A) );
 
-        % Finally, calculate the RT intervals
-        catt.tlock.RT_idx(iR)      = catt.tlock.tEnds_idx(iR)  - catt.tlock.rPeaks_idx(iR);
-        catt.tlock.RT_msec(iR)     = catt.tlock.tEnds_msec(iR) - catt.tlock.rPeaks_msec(iR);
+            % express the position & amplitude & timing of tEnd in terms of the
+            % whole ECG dataset
+            catt.tlock.tEnds_idx(iR)  = Xi(xi);
+            catt.tlock.tEnds_v(iR)    = catt.ECG.processed( Xi(xi) );
+            catt.tlock.tEnds_msec(iR) = catt.ECG.times( Xi(xi) );
+
+            % Finally, calculate the RT intervals
+            catt.tlock.RT_idx(iR)      = catt.tlock.tEnds_idx(iR)  - catt.tlock.rPeaks_idx(iR);
+            catt.tlock.RT_msec(iR)     = catt.tlock.tEnds_msec(iR) - catt.tlock.rPeaks_msec(iR);
+
+        catch
+            catt.tlock.tPeaks_idx(iR)  = nan;
+            catt.tlock.tPeaks_v(iR)    = nan;
+            catt.tlock.tPeaks_msec(iR) = nan;
+
+            catt.tlock.tEnds_idx(iR)   = nan;
+            catt.tlock.tEnds_v(iR)     = nan;
+            catt.tlock.tEnds_msec(iR)  = nan;
+
+            catt.tlock.RT_idx(iR)      = nan;
+            catt.tlock.RT_msec(iR)     = nan;
+        end
     end
 end
 end

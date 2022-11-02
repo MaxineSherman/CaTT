@@ -8,9 +8,15 @@
 %  Active sampling in visual search is coupled to the cardiac cycle.
 %  Cognition, 196, 104149.
 %
+% updates:
 %
+% v2.1, 2022/04/21
+%     - some fixations fell in the next RR interval. These are now mapped
+%     to the correct IBI.
+%     - stats output, contained in the structure 'out', is now saved in
+%     catt_demo_processed.mat
 % ========================================================================
-%  CaTT TOOLBOX v2.0
+%  CaTT TOOLBOX v2.1
 %  Sackler Centre for Consciousness Science, BSMS
 %  m.sherman@sussex.ac.uk
 %  08/08/2021
@@ -102,8 +108,8 @@ try
     datafiles_saccades = dir(['demo data/Saccades and Fixations/Sub*.mat']);
     datafiles_saccades = arrayfun(@(x) ['demo data/Saccades and Fixations/' x.name],datafiles_saccades,'UniformOutput',false);
 
-    datafiles_blinks = dir(['demo data/Blinks Data/Sub*.mat']);
-    datafiles_blinks = arrayfun(@(x) ['demo data/Blinks Data/' x.name],datafiles_blinks,'UniformOutput',false);
+    datafiles_blinks = dir(['demo data/blinks/Sub*.mat']);
+    datafiles_blinks = arrayfun(@(x) ['demo data/blinks/' x.name],datafiles_blinks,'UniformOutput',false);
 
     %% ========================================================================
     %  Saccades & fixations data: load subj files & put into catt format
@@ -121,22 +127,40 @@ try
         load( datafiles_saccades{subj} );
 
         % extract relevant info
-        onsets_ms_saccade  = Saccades_Mx3(:,2);
-        onsets_ms_fixation = Saccades_Mx3(:,9);
-        IBI                = Saccades_Mx3(:,4);
+        onsets_ms_saccade   = Saccades_Mx3(:,2);
+        onsets_ms_fixation  = Saccades_Mx3(:,9);
+        IBI_saccade         = Saccades_Mx3(:,4);
+        IBI_fixation        = Saccades_Mx3(:,4);
+
+        % sometimes fixations actually occurred in the next RR interval.
+        % scroll through the data and sort these points out.
+        idx = find( onsets_ms_fixation > IBI_fixation );
+
+        % if the last element is included kick it out the dataset (not sure
+        % why this happened - maybe early termination of ECG?)
+        if idx(end) == numel(onsets_ms_fixation)
+            onsets_ms_fixation = onsets_ms_fixation(1:end-1);
+            IBI_fixation       = IBI_fixation(1:end-1);
+            idx                = idx(1:end-1);
+        end
+
+        for i = 1:numel(idx)
+            onsets_ms_fixation( idx(i) ) = onsets_ms_fixation( idx(i) ) - IBI_fixation( idx(i) );
+            IBI_fixation( idx(i) ) = IBI_fixation( idx(i) + 1 );
+        end
 
         % we need to create the kind of structure we'd be getting from
         % catt_epoch
-        for iR = 1:numel(IBI)
-            catt_saccades{subj}.RR(iR).idx_RR      = 1:IBI(iR);
-            catt_saccades{subj}.RR(iR).times       = 1:IBI(iR);
+        for iR = 1:numel(IBI_saccade)
+            catt_saccades{subj}.RR(iR).idx_RR      = 1:IBI_saccade(iR);
+            catt_saccades{subj}.RR(iR).times       = 1:IBI_saccade(iR);
             catt_saccades{subj}.RR(iR).onset       = onsets_ms_saccade(iR);
             catt_saccades{subj}.RR(iR).response    = nan;
         end
 
-        for iR = 1:numel(IBI)
-            catt_fixations{subj}.RR(iR).idx_RR      = 1:IBI((iR));
-            catt_fixations{subj}.RR(iR).times       = 1:IBI((iR));
+        for iR = 1:numel(IBI_fixation)
+            catt_fixations{subj}.RR(iR).idx_RR      = 1:IBI_fixation((iR));
+            catt_fixations{subj}.RR(iR).times       = 1:IBI_fixation((iR));
             catt_fixations{subj}.RR(iR).onset       = onsets_ms_fixation((iR));
             catt_fixations{subj}.RR(iR).response    = nan;
         end
@@ -166,7 +190,12 @@ try
         onsets_ms_blink   = Saccades_Mx2(:,2);
         IBI               = Saccades_Mx2(:,3);
 
-        % let's pretend that the sample rate is 1000hz
+        % if there are any onsets > IBI, kick them out
+        idx               = find( onsets_ms_blink <= IBI );
+        onsets_ms_blink   = onsets_ms_blink(idx);
+        IBI               = IBI(idx);
+
+        % let's assume that the sample rate is 1000hz
         catt_opts.fs       = 1000;
 
         % we need to create the kind of structure we'd be getting from
@@ -195,10 +224,10 @@ try
             case 2; catt_opts.wrap2 = 'twav';
         end
 
-        for i_analysis = 1:3 % loop through the 3 types of event
+        for i_analysis = 2%1:3 % loop through the 3 types of event
             switch i_analysis
-                case 2; group = catt_saccades;  analysis_name = 'saccades';
                 case 1; group = catt_fixations; analysis_name = 'fixations';
+                case 2; group = catt_saccades;  analysis_name = 'saccades';
                 case 3; group = catt_blinks;    analysis_name = 'blinks';
             end
 
@@ -224,7 +253,7 @@ try
                 %  We need to save the stats output so we can combine over participants
                 %  later on.
 
-                [~, stats, group{subj}] = catt_bootstrap_clust( group{subj}, 'rao', 1000 );
+                [~, stats, group{subj}] = catt_bootstrap_clust( group{subj}, 'otest', 500 );
                 Z_subjs(subj)   = stats.zscore;
 
             end
@@ -281,6 +310,13 @@ try
             output = catt_consistency(group,8); % you could save the output structure to keep the stats
             input('Press any key to continue');
 
+            %% save
+            OUT.clust(i_wrap,i_analysis).consistency  = output;
+            OUT.clust(i_wrap,i_analysis).clust_zsubjs = Z_subjs;
+            OUT.clust(i_wrap,i_analysis).Z_group      = Z_group;
+            OUT.clust(i_wrap,i_analysis).P_group      = P_group;
+            save catt_demo_analysis OUT
+
         end
     end
     %% ========================================================================
@@ -306,8 +342,8 @@ try
     input('Press any key to continue');disp(sprintf('\n'));
 
     %% wrap to rpeak vs rpeak
-    for iwrap = 1:2
-        switch iwrap
+    for i_wrap = 1:2
+        switch i_wrap
             case 1; catt_opts.wrap2 = 'rpeak';
             case 2; catt_opts.wrap2 = 'twav';
         end
@@ -329,15 +365,15 @@ try
 
             % compare phases for saccades & fixations, then load in the
             % difference (%) and the zscore into the output structure
-            [~, stats] = catt_bootstrap_diff(saccades.onsets_rad,fixations.onsets_rad,'between',2000);
+            [~, stats] = catt_bootstrap_diff(saccades.onsets_rad,fixations.onsets_rad,'between',1000);
             phase_differences.sacc_fix(i,:) = [stats.difference,stats.Z];
 
             % repeat for saccades vs blinks
-            [~, stats] = catt_bootstrap_diff(saccades.onsets_rad,blinks.onsets_rad,'between',2000);
+            [~, stats] = catt_bootstrap_diff(saccades.onsets_rad,blinks.onsets_rad,'between',1000);
             phase_differences.sacc_blink(i,:) = [stats.difference,stats.Z];
 
             % repeat for fixations vs blinks
-            [~, stats] = catt_bootstrap_diff(fixations.onsets_rad,blinks.onsets_rad,'between',2000);
+            [~, stats] = catt_bootstrap_diff(fixations.onsets_rad,blinks.onsets_rad,'between',1000);
             phase_differences.fix_blink(i,:) = [stats.difference,stats.Z];
 
         end
@@ -350,13 +386,28 @@ try
         [P_group,Z_group] = catt_z2p( phase_differences.sacc_fix(:,2) );
         disp(sprintf('Saccades vs fixations: zval = %.3f, group pval = %.3f',[Z_group,P_group]));
 
+        OUT.diff(i_wrap,1).diff.Z_saccfix        = P_group;
+        OUT.diff(i_wrap,1).diff.P_saccfix        = Z_group;
+
         [P_group,Z_group] = catt_z2p( phase_differences.sacc_blink(:,2) );
         disp(sprintf('Saccades vs blinks: zval = %.3f, group pval = %.3f',[Z_group,P_group]));
+
+        OUT.diff(i_wrap,1).diff.Z_saccblink        = P_group;
+        OUT.diff(i_wrap,1).diff.P_saccblink        = Z_group;
 
         [P_group,Z_group] = catt_z2p( phase_differences.fix_blink(:,2) );
         disp(sprintf('Fixations vs blinks: zval = %.3f, group pval = %.3f',[Z_group,P_group]));
 
+        OUT.diff(i_wrap,1).Z_fixblink        = P_group;
+        OUT.diff(i_wrap,1).P_fixblink        = Z_group;
+
+        %% save
+        OUT.diff(i_wrap,1).phase_differences = phase_differences;
+        save catt_demo_analysis OUT
+
         input('Press any key to continue');disp(sprintf('\n'));
+
+        
     end
 
     %% ========================================================================
@@ -395,16 +446,29 @@ try
         1000);
     disp(sprintf('saccades ~ fixations: rho(30) = %.2f, p = %.3f',[stats.rho, pval]));
 
+    OUT.corr.P_saccfix = pval;
+    OUT.corr.R_saccfix = stats.rho;
+
     [pval,stats] = catt_bootstrap_corr( pref.saccades,'circular', ...
         pref.blinks,'circular',...
         1000);
     disp(sprintf('saccades ~ blinks: rho(30) = %.2f, p = %.3f',[stats.rho, pval]));
 
+    OUT.corr.P_saccblink = pval;
+    OUT.corr.R_saccblink = stats.rho;
 
     [pval,stats] = catt_bootstrap_corr( pref.blinks,'circular', ...
         pref.fixations,'circular',...
         1000);
+
+    OUT.corr.P_blinkfix = pval;
+    OUT.corr.R_blinkfix = stats.rho;
+
     disp(sprintf('blinks ~ fixations: rho(30) = %.2f, p = %.3f',[stats.rho, pval]));
+
+    %% save
+    OUT.corr.preferred_phases = pref;
+    save catt_demo_analysis OUT
 
 
     disp(sprintf('\n'));

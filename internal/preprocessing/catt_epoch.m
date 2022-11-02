@@ -18,11 +18,15 @@ global catt_opts
 try
 
     % first, for each onset figure out which RR interval it falls in
+    onsetR = [];
     for i = 1:numel(catt.onsets_ms)
         r_minus_onset = catt.tlock.rPeaks_msec - catt.onsets_ms(i);
         onsetloc      = find(diff(sign(r_minus_onset))~=0);
+        
         if isempty(onsetloc); onsetloc=1; end
-        onsetR(i) = onsetloc;
+        
+        onsetR(i) = onsetloc(1);% = [onsetR,onsetloc'];
+    
     end
 
 

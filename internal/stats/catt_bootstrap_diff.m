@@ -47,6 +47,7 @@
 %                                               'within', ...
 %                                               'median', ...
 %                                               'linear');
+%
 % ========================================================================
 %  CaTT TOOLBOX v2.0
 %  Sackler Centre for Consciousness Science, BSMS
